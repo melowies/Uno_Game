@@ -1,4 +1,4 @@
-
+//file: Player.java
 public class Player {
     private boolean isComputer;
     private Card[] hand;
@@ -42,15 +42,20 @@ public class Player {
                 break;
             }
         }
-        if (handSize == 1 && !calledUno) {
-            // player didn't call Uno
-            drawMultipleCards(deck, 4);
+        if (handSize == 0 && !calledUno) {
+            drawMultipleCards(deck, 4); // player didn't call Uno
         }
         calledUno = false; 
     }
 
     public Card[] getHand() {
         return hand;
+    }
+    
+    public void clearHand() {
+        this.hand = new Card[108]; 
+        this.handSize = 0;
+        this.calledUno = false;
     }
 
     public int getHandSize() {

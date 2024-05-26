@@ -1,4 +1,4 @@
-
+//file UnoGameGUI.java
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -35,6 +35,7 @@ public class UnoGameGUI extends JFrame {
         }
         initializeGame();
 
+
         setTitle("Uno Game");
         setSize(1000, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -47,8 +48,12 @@ public class UnoGameGUI extends JFrame {
         deckCountLabel = new JLabel("Cards left in deck: " + deck.getCardsLeft());
         topCardPanel.add(deckCountLabel, BorderLayout.SOUTH);
 
-        playerHandPanel = new JPanel();
-        playerHandPanel.setLayout(new FlowLayout());
+        playerHandPanel = new JPanel(new FlowLayout());
+        playerHandPanel.setPreferredSize(new Dimension(800, 150));
+
+        JScrollPane playerHandScrollPane = new JScrollPane(playerHandPanel);
+        playerHandScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED); 
+        playerHandScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
 
         drawButton = new JButton("Draw Card");
         drawButton.addActionListener(new DrawCardListener());
@@ -87,7 +92,8 @@ public class UnoGameGUI extends JFrame {
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(controlPanel, BorderLayout.NORTH);
         bottomPanel.add(playerHandPanel, BorderLayout.CENTER);
-        bottomPanel.add(lastMoveLabel, BorderLayout.SOUTH);
+        bottomPanel.add(lastMoveLabel, BorderLayout.EAST);
+        bottomPanel.add(playerHandScrollPane, BorderLayout.SOUTH);
 
         JScrollPane moveHistoryScrollPane = new JScrollPane(moveHistoryArea);
         moveHistoryScrollPane.setBorder(BorderFactory.createTitledBorder("Move History"));
@@ -103,23 +109,26 @@ public class UnoGameGUI extends JFrame {
         add(bottomPanel, BorderLayout.SOUTH);
         add(topCardPanel, BorderLayout.CENTER);
         add(moveHistoryScrollPane, BorderLayout.EAST);
-
-        startTimer();
         updatePlayerHand();
         updatePlayerPanels();
     }
 
     private void initializeGame() {
-        for (Player player : players) {
-            for (int i = 0; i < 7; i++) {
-                player.drawCard(deck);
-            }
+    deck = new Deck(); 
+    for (Player player : players) {
+        player.clearHand(); 
+        for (int i = 0; i < 7; i++) {
+            player.drawCard(deck);
         }
-        topCard = deck.drawCard();
-        currentPlayerIndex = 0;
-        gameDirection = true;
-        drawCardsAfterNext = 0;
     }
+    topCard = deck.drawCard();
+    currentPlayerIndex = 0;
+    gameDirection = true;
+    drawCardsAfterNext = 0;
+    resetTimer(); 
+    }
+
+
 
     private void updatePlayerHand() {
         playerHandPanel.removeAll();
@@ -149,25 +158,11 @@ public class UnoGameGUI extends JFrame {
         deckCountLabel.setText("Cards left in deck: " + deck.getCardsLeft());
     }
 
-    private void startTimer() {
-        timer = new Timer(1000, new ActionListener() {
-            int timeLeft = 30;
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                timeLeft--;
-                timerLabel.setText("Time left: " + timeLeft);
-                if (timeLeft <= 0) {
-                    timer.stop();
-                    autoPlayCard();
-                }
-            }
-        });
-        timer.start();
-    }
 
     private void resetTimer() {
-        timer.stop();
+        if (timer != null) {
+            timer.stop();
+        }
         timer = new Timer(1000, new ActionListener() {
             int timeLeft = 30;
 
@@ -185,35 +180,53 @@ public class UnoGameGUI extends JFrame {
     }
 
     private void autoPlayCard() {
-        Player currentPlayer = players[currentPlayerIndex];
-        Card playableCard = currentPlayer.getPlayableCard(topCard);
-        if (playableCard != null) {
-            currentPlayer.playCard(playableCard, deck);
-            topCard = playableCard;
-            topCardLabel.setText("Top Card: " + topCard);
-            lastMoveLabel.setText("Last Move: Player " + (currentPlayerIndex + 1) + " played " + playableCard);
-            moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " played " + playableCard + "\n");
-            handleSpecialCards(playableCard);
-        } else {
-            currentPlayer.drawCard(deck);
-            lastMoveLabel.setText("Last Move: Player " + (currentPlayerIndex + 1) + " drew a card");
-            moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " drew a card\n");
-            drawCardsAfterNext++;
-        }
-        updateDeckCount();
-        if (currentPlayer.getHandSize() == 0) {
-            displayRankings();
+    Player currentPlayer = players[currentPlayerIndex];
+
+    if (currentPlayer.getHandSize() == 0 && !currentPlayer.hasCalledUno()) {
+        currentPlayer.drawMultipleCards(deck, 4); 
+        lastMoveLabel.setText("Player " + (currentPlayerIndex + 1) + " didn't call Uno and drew 4 cards");
+        moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " didn't call Uno and drew 4 cards\n");
+        if (currentPlayer.getPlayableCard(topCard) == null) {
+            currentPlayerIndex = nextPlayerIndex();
+            updatePlayerPanels();
+            if (players[currentPlayerIndex].isComputer()) {
+                computerPlay(); 
+            } else {
+                updatePlayerHand();
+                resetTimer();
+            }
             return;
         }
-        currentPlayerIndex = nextPlayerIndex();
-        updatePlayerPanels();
-        if (players[currentPlayerIndex].isComputer()) {
-            computerPlay();
-        } else {
-            updatePlayerHand();
-            resetTimer();
-        }
     }
+
+    Card playableCard = currentPlayer.getPlayableCard(topCard);
+    if (playableCard != null) {
+        currentPlayer.playCard(playableCard, deck);
+        topCard = playableCard;
+        topCardLabel.setText("Top Card: " + topCard);
+        lastMoveLabel.setText("Last Move: Player " + (currentPlayerIndex + 1) + " played " + playableCard);
+        moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " played " + playableCard + "\n");
+        handleSpecialCards(playableCard);
+    }else {
+        currentPlayer.drawCard(deck);
+        lastMoveLabel.setText("Last Move: Player " + (currentPlayerIndex + 1) + " drew a card");
+        moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " drew a card\n");
+    }
+    
+    updateDeckCount();
+    if (currentPlayer.getHandSize() == 0 && !currentPlayer.hasCalledUno()) {
+        displayRankings();
+        return;
+    }
+    currentPlayerIndex = nextPlayerIndex();
+    updatePlayerPanels();
+    if (players[currentPlayerIndex].isComputer()) {
+        computerPlay();
+    } else {
+        updatePlayerHand();
+        resetTimer();
+    }
+}
 
     private void computerPlay() {
         resetTimer();
@@ -232,7 +245,6 @@ public class UnoGameGUI extends JFrame {
             currentPlayer.drawCard(deck);
             lastMoveLabel.setText("Last Move: Player " + (currentPlayerIndex + 1) + " drew a card");
             moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " drew a card\n");
-            drawCardsAfterNext++;
             updateDeckCount();
         }
         if (currentPlayer.getHandSize() == 0) {
@@ -360,10 +372,18 @@ public class UnoGameGUI extends JFrame {
 
     private int nextPlayerIndex() {
         if (deck.getCardsLeft() == 0) {
-            displayRankings(); 
-            return currentPlayerIndex; 
+            displayRankings();
+            return currentPlayerIndex;
         }
-        int nextIndex = gameDirection ? (currentPlayerIndex + 1) % players.length : (currentPlayerIndex - 1 + players.length) % players.length;
+        
+        if (gameDirection) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        } else {
+            currentPlayerIndex = (currentPlayerIndex - 1 + players.length) % players.length;
+        }
+        
+        int nextIndex = currentPlayerIndex;
+    
         if (drawCardsAfterNext > 0) {
             players[nextIndex].drawMultipleCards(deck, drawCardsAfterNext);
             drawCardsAfterNext = 0;
@@ -371,6 +391,7 @@ public class UnoGameGUI extends JFrame {
         }
         return nextIndex;
     }
+    
     
 
     private void displayRankings() {
@@ -398,9 +419,12 @@ public class UnoGameGUI extends JFrame {
                 currentPlayer.setCalledUno(true);
                 lastMoveLabel.setText("Player " + (currentPlayerIndex + 1) + " called Uno!");
                 moveHistoryArea.append("Player " + (currentPlayerIndex + 1) + " called Uno!\n");
+            } else {
+                JOptionPane.showMessageDialog(null, "You can only call Uno when you have exactly one card left!");
             }
         }
     }
+    
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
