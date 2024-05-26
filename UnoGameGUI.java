@@ -121,7 +121,9 @@ public class UnoGameGUI extends JFrame {
             player.drawCard(deck);
         }
     }
-    topCard = deck.drawCard();
+    do {
+        topCard = deck.drawCard();
+    } while (topCard.getColor() == Card.Color.WILD);
     currentPlayerIndex = 0;
     gameDirection = true;
     drawCardsAfterNext = 0;
