@@ -16,10 +16,10 @@ This is a Java-based graphical user interface (GUI) for the classic card game UN
 ## Screenshots
 
 ### Wild Card Color Selection
-![Wild Card Color Selection](ss1.png)
+![Wild Card Color Selection](ss2.png)
 
 ### Game Interface
-![Game Interface](ss2.png)
+![Game Interface](ss1.png)
 
 ## Game Rules
 
