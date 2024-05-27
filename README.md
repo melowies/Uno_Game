@@ -23,7 +23,7 @@ This is a Java-based graphical user interface (GUI) for the classic card game UN
 
 ## Game Rules
 
-- **Objective**: Be the first player to score 500 points. Points are scored by getting rid of all your cards before your opponents.
+- **Objective**: Be the first player to get the UNO!
 - **Starting the Game**: Each player is dealt 7 cards. The top card of the deck is turned over to start the discard pile.
 - **Playing Cards**: Players must match a card in their hand to the card on the top of the discard pile by color or number. If they cannot play a card, they must draw one from the deck.
 - **Special Cards**:
